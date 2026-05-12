@@ -1,0 +1,7 @@
+sys_paths:
+  - src/import/SVG/
+  - src/import/SVG/autoencoder
+
+ckpt_path: data/V1-SVG-XL-7000K-256x256.pt
+config_path: src/configs/svg_xl_pretrained_config.yaml
+stats_path: src/import/SVG/dinov3_sp_stats.pt
