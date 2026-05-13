@@ -19,6 +19,11 @@ def unzip_files_in_directory(path):
         print(f"file {zip_file} unzipped")
 
 if __name__ == '__main__':
-    with open('setup/config.yaml', 'r') as f:
+    setup_dir = Path(__file__).resolve().parent
+    repo_root = setup_dir.parents[1]
+    with open(setup_dir / 'config.yaml', 'r') as f:
         config = yaml.safe_load(f)
-    unzip_files_in_directory(config['data_dir'])
+    data_dir = config['data_dir']
+    if not os.path.isabs(data_dir):
+        data_dir = str(repo_root / data_dir)
+    unzip_files_in_directory(data_dir)
