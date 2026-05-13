@@ -73,7 +73,7 @@ model:
       - 16
       dropout: 0.0
     dinoconfig:
-      dinov3_location: ./dinov3
+      dinov3_location: src/import/dinov3
       model_name: dinov3_vits16plus
       weights: data/dinov3_vits16plus_pretrain_lvd1689m-4057cbaa.pth
     extra_vit_config:
