@@ -67,16 +67,9 @@ class sde:
         mean_x = init 
         samples = []
         sampler = self.__forward_fn()
-        y = model_kwargs['y']
-        cfg_scale = model_kwargs['cfg_scale']
-        # print('we reached changes in sde.sample')
-        
-        for i, ti in enumerate(self.t[:-1]):
+        for ti in self.t[:-1]:
             with th.no_grad():
-                current_kwargs = dict(y=y[i], cfg_scale=cfg_scale[i])
-                
-                x, mean_x = sampler(x, mean_x, ti, model, **current_kwargs)
-                # x, mean_x = sampler(x, mean_x, ti, model, **model_kwargs)
+                x, mean_x = sampler(x, mean_x, ti, model, **model_kwargs)
                 samples.append(x)
 
         return samples

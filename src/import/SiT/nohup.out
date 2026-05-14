@@ -1,8 +1,0 @@
-Traceback (most recent call last):
-  File "/home/garifzjanovni/non-vae-ldm/SiT/sample.py", line 13, in <module>
-    from diffusers.models import AutoencoderKL
-ModuleNotFoundError: No module named 'diffusers'
-Traceback (most recent call last):
-  File "/home/garifzjanovni/non-vae-ldm/SiT/sample.py", line 13, in <module>
-    from diffusers.models import AutoencoderKL
-ModuleNotFoundError: No module named 'diffusers'

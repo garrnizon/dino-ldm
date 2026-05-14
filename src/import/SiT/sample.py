@@ -1,8 +1,6 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
-import os
 
-# os.environ["CUDA_VISIBLE_DEVICES"] = '1'
 """
 Sample new images from a pre-trained SiT.
 """
@@ -18,7 +16,6 @@ from transport import create_transport, Sampler
 import argparse
 import sys
 from time import time
-from tqdm import tqdm
 
 
 def main(mode, args):
@@ -88,47 +85,28 @@ def main(mode, args):
     vae = AutoencoderKL.from_pretrained(f"stabilityai/sd-vae-ft-{args.vae}").to(device)
 
     # Labels to condition the model with (feel free to change):
-    batch_size = 8
-    class_a = 283
-    class_b = 231
-    class_labels = [class_a] * batch_size
-    class_b_labels = [class_b] * batch_size
+    class_labels = [207, 360, 387, 974, 88, 979, 417, 279]
     
     # Create sampling noise:
     n = len(class_labels)
-    num_steps_before_switch = args.num_before_switch_steps
-    dirname = f'{class_a}_{class_b}_{args.num_sampling_steps}_{num_steps_before_switch}'
-    os.makedirs(dirname, exist_ok=True)
-    
-    count = len([f for f in os.listdir(dirname) 
-                if os.path.isfile(os.path.join(dirname, f))])
-    print(f"Number of files: {count}")
-    torch.manual_seed(count * count + count + args.num_before_switch_steps * 10 ** 5)
-    for ii in tqdm(range(count, 200)):
-        z = torch.randn(n, 4, latent_size, latent_size, device=device)
+    z = torch.randn(n, 4, latent_size, latent_size, device=device)
+    y = torch.tensor(class_labels, device=device)
 
-        y = torch.tensor([class_labels for _ in range(num_steps_before_switch)]+ [class_b_labels for _ in range(args.num_sampling_steps - num_steps_before_switch)], device=device)
+    # Setup classifier-free guidance:
+    z = torch.cat([z, z], 0)
+    y_null = torch.tensor([1000] * n, device=device)
+    y = torch.cat([y, y_null], 0)
+    model_kwargs = dict(y=y, cfg_scale=args.cfg_scale)
 
-        z = torch.cat([z, z], 0)
+    # Sample images:
+    start_time = time()
+    samples = sample_fn(z, model.forward_with_cfg, **model_kwargs)[-1]
+    samples, _ = samples.chunk(2, dim=0)  # Remove null class samples
+    samples = vae.decode(samples / 0.18215).sample
+    print(f"Sampling took {time() - start_time:.2f} seconds.")
 
-        y_null = torch.tensor(
-            [[1000] * n for _ in range(args.num_sampling_steps)],
-            device=device)
-        
-        y = torch.cat([y, y_null], 1)
-
-        model_kwargs = dict(y=y, cfg_scale=[args.cfg_scale] * args.num_sampling_steps)
-
-        # Sample images:
-        # start_time = time()
-        samples = sample_fn(z, model.forward_with_cfg, **model_kwargs)[-1]
-        samples, _ = samples.chunk(2, dim=0)  # Remove null class samples
-        torch.save(samples, f'{dirname}/{ii}.pt')
-    # samples = vae.decode(samples / 0.18215).sample
-    # print(f"Sampling took {time() - start_time:.2f} seconds.")
-
-    # # Save and display images:
-    # save_image(samples, "sample.png", nrow=4, normalize=True, value_range=(-1, 1))
+    # Save and display images:
+    save_image(samples, "sample.png", nrow=4, normalize=True, value_range=(-1, 1))
 
 
 if __name__ == "__main__":
@@ -149,7 +127,6 @@ if __name__ == "__main__":
     parser.add_argument("--num-classes", type=int, default=1000)
     parser.add_argument("--cfg-scale", type=float, default=4.0)
     parser.add_argument("--num-sampling-steps", type=int, default=250)
-    parser.add_argument("--num-before-switch-steps", type=int, default=250)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--ckpt", type=str, default=None,
                         help="Optional path to a SiT checkpoint (default: auto-download a pre-trained SiT-XL/2 model).")

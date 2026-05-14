@@ -252,16 +252,7 @@ class Sampler:
         last_step_size,
     ):
         """Get the last step function of the SDE solver"""
-        
-        def update_kwargs(model_kwargs) -> dict:
-            # return model_kwargs
-            y = model_kwargs['y'][-1]
-            cfg_scale = model_kwargs['cfg_scale'][-1]
-            # print('we rached changes at the last step')
-            return dict(y=y, cfg_scale=cfg_scale)
-
-
-
+    
         if last_step is None:
             last_step_fn = \
                 lambda x, t, model, **model_kwargs: \
@@ -269,7 +260,7 @@ class Sampler:
         elif last_step == "Mean":
             last_step_fn = \
                 lambda x, t, model, **model_kwargs: \
-                    x + sde_drift(x, t, model, **update_kwargs(model_kwargs)) * last_step_size
+                    x + sde_drift(x, t, model, **model_kwargs) * last_step_size
         elif last_step == "Tweedie":
             alpha = self.transport.path_sampler.compute_alpha_t # simple aliasing; the original name was too long
             sigma = self.transport.path_sampler.compute_sigma_t
@@ -279,7 +270,7 @@ class Sampler:
         elif last_step == "Euler":
             last_step_fn = \
                 lambda x, t, model, **model_kwargs: \
-                    x + self.drift(x, t, model, **update_kwargs(model_kwargs)) * last_step_size
+                    x + self.drift(x, t, model, **model_kwargs) * last_step_size
         else:
             raise NotImplementedError()
 
@@ -336,10 +327,8 @@ class Sampler:
             
 
         def _sample(init, model, **model_kwargs):
-            # print('entered _sde.sample')
             xs = _sde.sample(init, model, **model_kwargs)
             ts = th.ones(init.size(0), device=init.device) * t1
-            # print('entered last_step_fn')
             x = last_step_fn(xs[-1], ts, model, **model_kwargs)
             xs.append(x)
 
